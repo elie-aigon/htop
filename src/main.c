@@ -1,28 +1,17 @@
-#include <dirent.h>
-#include <ncurses.h>
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "htop_header.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-
-// Déclaration de la fonction get_processus pour éviter les avertissements d'implicite
-void get_processus(WINDOW *win);
-
-// Déclaration préalable de la fonction actualiser_processus
-void *actualiser_processus(void *args);
-
-WINDOW *win; // Déclaration globale de la fenêtre
+void kill_processus(int pid) {
+    if (kill(pid, SIGTERM) == -1) { // Essayez de terminer le processus gracieusement
+        perror("Erreur lors de la tentative de terminaison du processus");
+    }
+}
 
 void *update_processus() {
     while (true) {
         wclear(win);
         get_processus(win);
         wrefresh(win);
-        usleep(1000000); // Pause de 3 secondes
+        usleep(100000);
     }
     return NULL;
 }
@@ -66,8 +55,13 @@ int main() {
     int height, width;
     getmaxyx(stdscr, height, width);
 
-    win = newwin(height, width, 0, 0);
+    win = newwin(height - 3, width, 0, 0); // Laissez un peu d'espace pour la fenêtre d'entrée
     scrollok(win, TRUE); // Active le défilement dans la fenêtre
+// Création de la fenêtre pour les entrées utilisateur
+    WINDOW *input_win = newwin(3, width, height - 3, 0); // Fenêtre d'entrée en bas
+    box(input_win, 0, 0); // Optionnel : ajoute une bordure à la fenêtre d'entrée
+    wrefresh(input_win); // Affiche la fenêtre d'entrée
+    scrollok(input_win, TRUE);
 
     pthread_t thread;
     pthread_create(&thread, NULL, update_processus, NULL); // Crée le thread pour actualiser les processus
@@ -75,15 +69,15 @@ int main() {
     int ch;
     while (1) {
         ch = getch();
-        if(ch == KEY_F(10)){ // Closing state
-            wprintw(win, "F10 key pressed, closing htop...");
-            wrefresh(win);
-            pthread_cancel(thread);
-            usleep(2000000);
-            delwin(win);
-            endwin();
-            break;
-        }
+//        if(ch == KEY_F(10)){ // Closing state
+//            wprintw(win, "F10 key pressed, closing htop...");
+//            wrefresh(win);
+//            pthread_cancel(thread);
+//            usleep(2000000);
+//            delwin(win);
+//            endwin();
+//            break;
+//        }
         switch (ch) {
             case KEY_F(1): // Si l'utilisateur appuie sur F1
                 clear(); // Nettoie l'écran
@@ -94,12 +88,42 @@ int main() {
                 clear(); // Nettoie l'écran
                 wprintw(win, "F2 Pressé");
                 break;
+            case KEY_F(4): // Si l'utilisateur appuie sur F4
+                wclear(input_win); // Nettoie la fenêtre d'entrée
+                box(input_win, 0, 0); // Redessine la bordure
+                mvwprintw(input_win, 1, 1, "Enter PID to kill: "); // Demande le PID
+                wrefresh(input_win);
+
+                echo();
+                char pid_str[10];
+                wgetstr(input_win, pid_str); // Utilise wgetstr pour lire à partir de la fenêtre d'entrée
+                int pid = atoi(pid_str);
+                if (pid > 0) {
+                    kill_processus(pid);
+                } else {
+                    mvwprintw(input_win, 1, 1, "Invalid PID.         ");
+                }
+                noecho();
+                wrefresh(input_win);
+                break;
             case KEY_F(10): // Si l'utilisateur appuie sur F3
-                endwin(); // Termine la session Ncurses
-                return 0; // Quitte le programme
+                wclear(input_win); // Nettoie la fenêtre d'entrée
+                box(input_win, 0, 0);
+                mvwprintw(input_win, 1, 1, "F10 key pressed, closing htop...");
+                wrefresh(input_win);
+                pthread_cancel(thread);
+                usleep(2000000);
+                delwin(win);
+                delwin(input_win);
+                endwin();
+                return 0;
+
+
             default:
-                wprintw(win, "%d est préssée", ch);
-                wrefresh(win);
+                wclear(input_win);
+                box(input_win, 0, 0);
+                mvwprintw(input_win, 1, 1, "%d est préssée", ch);
+                wrefresh(input_win);
                 break;
         }
     }
@@ -118,7 +142,7 @@ int main() {
 //                clear(); // Nettoie l'écran
 //                wprintw(win, "Refreshed\n");
 //                get_processus(win); // Affiche les processus dans la fenêtre
-²²²         //                break;
+//                break;
 //            case KEY_F(2): // Si l'utilisateur appuie sur F2
 //                clear(); // Nettoie l'écran
 //                wprintw(win, "F2 Pressé");

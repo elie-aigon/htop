@@ -6,10 +6,10 @@ OUTDIR = out
 
 # Compiler et flags
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -Wextra -Werror
 
 # Source files
-SRCS = $(wildcard *.c)
+SRCS = $(wildcard src/*.c)
 
 # Commande pour compiler et lier en une seule étape
 $(TARGET):
