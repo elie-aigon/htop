@@ -1,0 +1,3 @@
+/mnt/c/Users/eliea/CLionProjects/htop/cmake-build-debug/CMakeFiles/htop.dir
+/mnt/c/Users/eliea/CLionProjects/htop/cmake-build-debug/CMakeFiles/edit_cache.dir
+/mnt/c/Users/eliea/CLionProjects/htop/cmake-build-debug/CMakeFiles/rebuild_cache.dir
